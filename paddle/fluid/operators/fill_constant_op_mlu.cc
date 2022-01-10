@@ -54,10 +54,7 @@ class FillConstantMLUKernel : public framework::OpKernel<T> {
     }
 
     auto shape = GetShape(ctx);
-
     out_var->mutable_data<T>(shape, ctx.GetPlace());
-    // out_var->mutable_data<T>(ctx.GetPlace());
-    // MLU should do sth
     MLUCnnlTensorDesc output_desc(*out_var, CNNL_LAYOUT_ARRAY,
                                   ToCnnlDataType(out_var->type()));
     MLUCnnl::Fill(ctx, value, output_desc.get(),
@@ -69,7 +66,8 @@ class FillConstantMLUKernel : public framework::OpKernel<T> {
 
 namespace ops = paddle::operators;
 
-REGISTER_OP_MLU_KERNEL(fill_constant,
-                       paddle::operators::FillConstantMLUKernel<float>,
-                       paddle::operators::FillConstantMLUKernel<bool>,
-                       paddle::operators::FillConstantMLUKernel<int>);
+REGISTER_OP_MLU_KERNEL(
+    fill_constant, paddle::operators::FillConstantMLUKernel<float>,
+    paddle::operators::FillConstantMLUKernel<bool>,
+    paddle::operators::FillConstantMLUKernel<int>,
+    paddle::operators::FillConstantMLUKernel<paddle::platform::float16>);
