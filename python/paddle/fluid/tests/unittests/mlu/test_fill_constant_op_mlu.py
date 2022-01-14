@@ -226,7 +226,7 @@ class TestFillConstantOp1_ValueTensor(OpTest):
             "ShapeTensor": np.array(self.shape).astype("int32"),
             'ValueTensor': np.array([self.value]).astype("float32")
         }
-        self.attrs = {'value': self.value}
+        self.attrs = {'value': self.value + 1.0}
         self.outputs = {'Out': np.full(self.shape, self.value)}
 
         self.place = paddle.device.MLUPlace(0)
@@ -446,33 +446,6 @@ class TestFillConstantOpError(unittest.TestCase):
                     shape=[shape, 2], dtype="float32", value=1)
 
             self.assertRaises(TypeError, test_shape_tensor_list_dtype)
-
-
-class TestFillConstantOp_ValueTensorBf16(OpTest):
-    def setUp(self):
-        '''Test fill_constant op with specified value
-        '''
-        self.op_type = "fill_constant"
-        self.init_data()
-
-        self.inputs = {
-            "ShapeTensor": np.array(self.shape).astype("int32"),
-            'ValueTensor':
-            convert_float_to_uint16(np.array([self.value]).astype("float32"))
-        }
-        self.attrs = {'value': self.value, 'dtype': 5}
-        self.outputs = {'Out': np.full(self.shape, self.value)}
-
-        self.place = paddle.device.MLUPlace(0)
-        self.__class__.use_mlu = True
-
-    def init_data(self):
-        self.shape = [123, 92]
-        self.value = 3.0
-        self.dtype = np.uint16
-
-    def test_check_output(self):
-        self.check_output_with_place(self.place)
 
 
 if __name__ == "__main__":

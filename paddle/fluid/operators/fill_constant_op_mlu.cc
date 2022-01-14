@@ -52,6 +52,23 @@ class FillConstantMLUKernel : public framework::OpKernel<T> {
         }
       }
     }
+    if (ctx.HasInput("ValueTensor")) {
+      auto *value_tensor = ctx.Input<framework::Tensor>("ValueTensor");
+      PADDLE_ENFORCE_EQ(
+          value_tensor->numel(), 1,
+          platform::errors::InvalidArgument(
+              "When use Tensor as value to set Tensor value in fill_cosntant, "
+              "value input(ValueTensor) size must be 1, but get %d",
+              value_tensor->numel()));
+      const T *tensor_data = value_tensor->data<T>();
+      framework::Tensor mlu_tensor;
+      auto tmp_place = value_tensor->place();
+      if (platform::is_mlu_place(tmp_place)) {
+        TensorCopySync(*value_tensor, platform::CPUPlace(), &mlu_tensor);
+        tensor_data = mlu_tensor.data<T>();
+      }
+      value = tensor_data[0];
+    }
 
     auto shape = GetShape(ctx);
     out_var->mutable_data<T>(shape, ctx.GetPlace());
@@ -70,4 +87,7 @@ REGISTER_OP_MLU_KERNEL(
     fill_constant, paddle::operators::FillConstantMLUKernel<float>,
     paddle::operators::FillConstantMLUKernel<bool>,
     paddle::operators::FillConstantMLUKernel<int>,
+    paddle::operators::FillConstantMLUKernel<uint8_t>,
+    paddle::operators::FillConstantMLUKernel<int16_t>,
+    paddle::operators::FillConstantMLUKernel<int64_t>,
     paddle::operators::FillConstantMLUKernel<paddle::platform::float16>);
