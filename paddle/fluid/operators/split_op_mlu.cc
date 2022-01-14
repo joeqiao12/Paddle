@@ -36,21 +36,45 @@ class SplitMLUKernel : public framework::OpKernel<T> {
     int axis = ctx.Attr<int>("axis");
     auto in_dims = in->dims();
     auto outnumbers = outs.size();
+    auto num_tensor = num == 0 ? outnumbers : num;
     VLOG(2) << "in_dims------------------------------" << in_dims;
+    VLOG(2) << "num------------------------------------" << num;
+    VLOG(2) << "axis------------------------------------" << axis;
+    VLOG(2) << "sections[0]------------------------------------" << sections[0];
+    VLOG(2) << "sections[1]------------------------------------" << sections[1];
     VLOG(2) << "outnumbers-----------------------------" << outnumbers;
+    VLOG(2) << "num_tensor-----------------------------" << num_tensor;
 
+    bool need_resize_outs_dims = false;
     if (ctx.HasInput("AxisTensor")) {
-      PADDLE_THROW(platform::errors::Unimplemented(
-          "The AxisTensor is not supported on MLU now."));
+      auto* axis_tensor = ctx.Input<framework::Tensor>("AxisTensor");
+      axis = GetDataFromTensor(axis_tensor)[0];
+      need_resize_outs_dims = true;
     }
-    if (ctx.HasInput("SectionsTensorList")) {
-      PADDLE_THROW(platform::errors::Unimplemented(
-          "The SectionsTensorList is not supported on MLU now."));
+    auto sections_tensor_list =
+        ctx.MultiInput<framework::Tensor>("SectionsTensorList");
+    if (sections_tensor_list.size() > 0) {
+      sections = GetDataFromTensorList(sections_tensor_list);
+      need_resize_outs_dims = true;
     }
+    if (need_resize_outs_dims) {
+      std::vector<framework::DDim> outs_dims =
+          UpdateOutsDims(true, true, in_dims, num, sections, axis, outnumbers);
+      for (size_t j = 0; j < outs.size(); ++j) {
+        outs[j]->Resize(outs_dims[j]);
+      }
+    }
+    // if (ctx.HasInput("AxisTensor")) {
+    //   PADDLE_THROW(platform::errors::Unimplemented(
+    //       "The AxisTensor is not supported on MLU now."));
+    // }
+    // if (ctx.HasInput("SectionsTensorList")) {
+    //   PADDLE_THROW(platform::errors::Unimplemented(
+    //       "The SectionsTensorList is not supported on MLU now."));
+    // }
 
     // init out tensors
     std::vector<void*> vct_tensor;
-    // std::vector<const Tensor*> vct_tensor;
     std::vector<MLUCnnlTensorDesc> output_descs;
     std::vector<cnnlTensorDescriptor_t> desc_vector;
     auto place = ctx.GetPlace();
@@ -60,22 +84,15 @@ class SplitMLUKernel : public framework::OpKernel<T> {
           *outs[i], CNNL_LAYOUT_ARRAY, ToCnnlDataType(outs[i]->type())));
       desc_vector.push_back(output_descs.back().get());
       vct_tensor.push_back(reinterpret_cast<void*>(outs[i]->data<T>()));
-      // vct_tensor.push_back(reinterpret_cast<const
-      // Tensor*>(outs[i]->data<T>()));
     }
     // init in tensors
     MLUCnnlTensorDesc input_desc(*in, CNNL_LAYOUT_ARRAY,
                                  ToCnnlDataType(in->type()));
 
     // MLU should do sth
-    MLUCnnl::Split(ctx, num, axis, input_desc.get(),
+    MLUCnnl::Split(ctx, num_tensor, axis, input_desc.get(),
                    reinterpret_cast<const void*>(in->data<T>()),
                    desc_vector.data(), vct_tensor.data());
-    // MLUCnnl::Split(ctx, num, axis,
-    //                input_desc.get(), reinterpret_cast<const
-    //                void*>(in->data<T>()),
-    //                reinterpret_cast<const
-    //                CnnlTensorDesc*>(desc_vector.data()), vct_tensor.data());
   }
 };
 
@@ -86,5 +103,6 @@ namespace ops = paddle::operators;
 namespace plat = paddle::platform;
 
 REGISTER_OP_MLU_KERNEL(split, ops::SplitMLUKernel<float>,
-                       ops::SplitMLUKernel<int>,
+                       ops::SplitMLUKernel<int64_t>, ops::SplitMLUKernel<int>,
+                       ops::SplitMLUKernel<bool>,
                        ops::SplitMLUKernel<plat::float16>);
