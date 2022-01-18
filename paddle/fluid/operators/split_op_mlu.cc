@@ -1,5 +1,6 @@
 /* Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
 
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,6 +15,7 @@ limitations under the License. */
 
 #include "paddle/fluid/operators/split_op.h"
 #include "paddle/fluid/operators/mlu/mlu_baseop.h"
+
 #include "paddle/fluid/platform/device/mlu/device_context.h"
 
 namespace paddle {
@@ -25,7 +27,9 @@ template <typename T>
 class SplitMLUKernel : public framework::OpKernel<T> {
  public:
   void Compute(const framework::ExecutionContext& ctx) const override {
+    
     // init parameter
+
     auto* in = ctx.Input<framework::Tensor>("X");
     auto outs = ctx.MultiOutput<framework::Tensor>("Out");
     int num = ctx.Attr<int>("num");
@@ -34,6 +38,7 @@ class SplitMLUKernel : public framework::OpKernel<T> {
     auto in_dims = in->dims();
     auto outnumbers = outs.size();
     auto num_tensor = num == 0 ? outnumbers : num;
+
 
     bool need_resize_outs_dims = false;
     if (ctx.HasInput("AxisTensor")) {
@@ -54,6 +59,7 @@ class SplitMLUKernel : public framework::OpKernel<T> {
         outs[j]->Resize(outs_dims[j]);
       }
     }
+
 
     // init out tensors
     std::vector<void*> vct_tensor;

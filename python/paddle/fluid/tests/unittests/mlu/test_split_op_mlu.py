@@ -185,6 +185,7 @@ class TestSplitOp_AxisTensor(OpTest):
         self.check_output_with_place(self.place)
 
 
+
 class TestSplitOp_SectionsTensor(OpTest):
     def setUp(self):
         self._set_op_type()
@@ -228,6 +229,7 @@ class TestSplitOp_SectionsTensor(OpTest):
 
     def test_check_output(self):
         self.check_output_with_place(self.place)
+
 
 
 if __name__ == '__main__':
