@@ -74,8 +74,7 @@ class FillConstantMLUKernel : public framework::OpKernel<T> {
     out_var->mutable_data<T>(shape, ctx.GetPlace());
     MLUCnnlTensorDesc output_desc(*out_var, CNNL_LAYOUT_ARRAY,
                                   ToCnnlDataType(out_var->type()));
-    MLUCnnl::Fill(ctx, value, output_desc.get(),
-                  reinterpret_cast<void *>(out_var->data<T>()));
+    MLUCnnl::Fill(ctx, value, output_desc.get(), GetBasePtr(out_var));
   }
 };
 }  // namespace operators

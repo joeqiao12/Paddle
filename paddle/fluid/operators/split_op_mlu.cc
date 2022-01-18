@@ -32,8 +32,8 @@ class SplitMLUKernel : public framework::OpKernel<T> {
     std::vector<int> sections = ctx.Attr<std::vector<int>>("sections");
     int axis = ctx.Attr<int>("axis");
     auto in_dims = in->dims();
-    auto outnumbers = outs.size();
-    auto num_tensor = num == 0 ? outnumbers : num;
+    auto out_size = outs.size();
+    auto num_tensor = num == 0 ? out_size : num;
 
     bool need_resize_outs_dims = false;
     if (ctx.HasInput("AxisTensor")) {
@@ -49,7 +49,7 @@ class SplitMLUKernel : public framework::OpKernel<T> {
     }
     if (need_resize_outs_dims) {
       std::vector<framework::DDim> outs_dims =
-          UpdateOutsDims(true, true, in_dims, num, sections, axis, outnumbers);
+          UpdateOutsDims(true, true, in_dims, num, sections, axis, out_size);
       for (size_t j = 0; j < outs.size(); ++j) {
         outs[j]->Resize(outs_dims[j]);
       }
@@ -65,15 +65,14 @@ class SplitMLUKernel : public framework::OpKernel<T> {
       output_descs.emplace_back(MLUCnnlTensorDesc(
           *outs[i], CNNL_LAYOUT_ARRAY, ToCnnlDataType(outs[i]->type())));
       desc_vector.push_back(output_descs.back().get());
-      vct_tensor.push_back(reinterpret_cast<void*>(outs[i]->data<T>()));
+      vct_tensor.push_back(GetBasePtr(outs[i]));
     }
     // init in tensors
     MLUCnnlTensorDesc input_desc(*in, CNNL_LAYOUT_ARRAY,
                                  ToCnnlDataType(in->type()));
 
     // MLU should do sth
-    MLUCnnl::Split(ctx, num_tensor, axis, input_desc.get(),
-                   reinterpret_cast<const void*>(in->data<T>()),
+    MLUCnnl::Split(ctx, num_tensor, axis, input_desc.get(), GetBasePtr(in),
                    desc_vector.data(), vct_tensor.data());
   }
 };
