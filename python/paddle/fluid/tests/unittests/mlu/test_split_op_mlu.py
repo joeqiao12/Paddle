@@ -55,9 +55,6 @@ class TestCase1(OpTest):
     def test_check_output(self):
         self.check_output_with_place(self.place)
 
-    # def test_check_grad(self):
-    #     self.check_grad_with_place(self.place, ["X"], self.outs)
-
     def set_example(self):
         self.dtype = "float32"
         self.x = np.random.random((2, 4, 6))
@@ -186,9 +183,6 @@ class TestSplitOp_AxisTensor(OpTest):
 
     def test_check_output(self):
         self.check_output_with_place(self.place)
-
-    # def test_check_grad(self):
-    #     self.check_grad_with_place(self.place, ["X"], self.outs)
 
 
 class TestSplitOp_SectionsTensor(OpTest):
